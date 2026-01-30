@@ -6,10 +6,12 @@ import Foundation
 @main
 struct SwiftGodotIntegrate: AsyncParsableCommand {
 
+    @Option
+    var projectName: String?
+
     private lazy var templateLoader: ResourceLoader = .templateLoader
 
     mutating func run() async throws {
-        let text = try templateLoader.loadString(fromFileWithName: "Package")
-        print(text)
+        print("Hello, World!")
     }
 }

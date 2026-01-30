@@ -1,7 +1,5 @@
 import Foundation
 
-private class BundleFinder {}
-
 struct ResourceLoader: Decodable {
     let path: String?
     let defaultExtension: String?
@@ -10,6 +8,7 @@ struct ResourceLoader: Decodable {
         withName name: String,
         fileExtension: String? = nil
     ) throws -> Data {
+        // Bundle.module does not reutrn correct url when building with Xcode
         guard let url = Bundle.module.url(
             forResource: name,
             withExtension: fileExtension ?? defaultExtension,
