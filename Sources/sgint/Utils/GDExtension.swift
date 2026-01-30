@@ -41,25 +41,23 @@ struct GDExtension {
     }
     
     var tscnRepresentation: TSCN {
-        get throws {
-            var dependencies: TSCNValue = TSCNValue()
-            var libraries: TSCNValue = TSCNValue()
-            
-            for platform in platforms {
-                for mode in buildModes {
-                    let target = "\(platform.name).\(mode.rawValue)"
-                    let driverLocation = "\(binLocation)/\(platform.driverLibPrefix)\(name).\(platform.libExtension)"
-                    let swiftGodotLocation = "\(binLocation)/\(platform.swiftGodotLibName).\(platform.libExtension)"
-                    dependencies[target] = driverLocation
-                    libraries[target] = [swiftGodotLocation: ""]
-                }
+        var dependencies: TSCNValue = TSCNValue()
+        var libraries: TSCNValue = TSCNValue()
+        
+        for platform in platforms {
+            for mode in buildModes {
+                let target = "\(platform.name).\(mode.rawValue)"
+                let driverLocation = "\(binLocation)/\(platform.driverLibPrefix)\(name).\(platform.libExtension)"
+                let swiftGodotLocation = "\(binLocation)/\(platform.swiftGodotLibName).\(platform.libExtension)"
+                dependencies[target] = driverLocation
+                libraries[target] = [swiftGodotLocation: ""]
             }
-            return [
-                "configuration": configuration.tscnValue,
-                "dependencies": dependencies,
-                "libraries": libraries
-            ]
         }
+        return [
+            "configuration": configuration.tscnValue,
+            "dependencies": dependencies,
+            "libraries": libraries
+        ]
     }
     
     struct Configuration: Hashable, Codable {

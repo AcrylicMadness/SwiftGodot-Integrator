@@ -14,7 +14,7 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
     mutating func run() async throws {
         print(
             try TSCNEncoder().encode(
-                tscn: try GDExtension(
+                tscn: GDExtension(
                     name: "ExampleGameDriver",
                     platforms: [Platform_iOS(), Platform_macOS()]
                 ).tscnRepresentation
