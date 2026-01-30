@@ -10,4 +10,8 @@ import Foundation
 struct Platform_iOS: Platform {
     var name: String { "ios" }
     var libExtension: String { "framework" }
+    
+    func build(using builder: Builder) async throws {
+        fatalError("iOS Not implemented")
+    }
 }

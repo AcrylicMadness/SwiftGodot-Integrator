@@ -47,16 +47,21 @@ struct GDExtension {
         for platform in platforms {
             for mode in buildModes {
                 let target = "\(platform.name).\(mode.rawValue)"
-                let driverLocation = "\(binLocation)/\(platform.driverLibPrefix)\(name).\(platform.libExtension)"
-                let swiftGodotLocation = "\(binLocation)/\(platform.swiftGodotLibName).\(platform.libExtension)"
-                dependencies[target] = driverLocation
-                libraries[target] = [swiftGodotLocation: ""]
+                let (driverLib, swiftGodotLib) = platform.getLibNames(for: name)
+                
+                let baseLocation = "\(binLocation)/\(name)/\(platform.name)/\(mode.rawValue)"
+                
+                let driverLocation = "\(baseLocation)/\(driverLib)"
+                let swiftGodotLocation = "\(baseLocation)/\(swiftGodotLib)"
+                
+                libraries[target] = driverLocation
+                dependencies[target] = [swiftGodotLocation: ""]
             }
         }
         return [
             "configuration": configuration.tscnValue,
-            "dependencies": dependencies,
-            "libraries": libraries
+            "libraries": libraries,
+            "dependencies": dependencies
         ]
     }
     
@@ -86,7 +91,7 @@ struct GDExtension {
                         let label = element.label,
                         case Optional<any Codable & Hashable>.some(let value) = element.value
                     {
-                        dict[label.camelCaseToSnakeCase()] = value
+                        dict[label.toSnakeCase()] = value
                     }
                 }
             }

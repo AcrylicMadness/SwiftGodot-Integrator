@@ -8,6 +8,10 @@ import Foundation
 
 extension String {
     
+    var alphanumerics: String {
+        return String(unicodeScalars.filter(CharacterSet.alphanumerics.contains))
+    }
+    
     mutating
     func appendLine() {
         append("\n")
@@ -19,7 +23,7 @@ extension String {
         appendLine()
     }
     
-    func camelCaseToSnakeCase() -> String {
+    func toSnakeCase() -> String {
         let acronymPattern = "([A-Z]+)([A-Z][a-z]|[0-9])"
         let normalPattern = "([a-z0-9])([A-Z])"
         return self
@@ -28,7 +32,8 @@ extension String {
             .lowercased() ?? self.lowercased()
     }
     
-    fileprivate func processCamalCaseRegex(pattern: String) -> String? {
+    fileprivate
+    func processCamalCaseRegex(pattern: String) -> String? {
         let regex = try? NSRegularExpression(pattern: pattern, options: [])
         let range = NSRange(location: 0, length: count)
         return regex?.stringByReplacingMatches(

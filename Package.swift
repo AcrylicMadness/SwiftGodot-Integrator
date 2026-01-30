@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "sgint",
     platforms: [
-        .macOS(.v10_15)
+        .macOS(.v12)
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.7.0"),
