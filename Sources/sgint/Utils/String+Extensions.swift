@@ -43,4 +43,20 @@ extension String {
             withTemplate: "$1_$2"
         )
     }
+    
+    func maxSequentialRepeats(of char: Character) -> Int {
+        var maxCount = 0
+        var currentCount = 0
+        for character in self {
+            if character == char {
+                currentCount += 1
+                if currentCount > maxCount {
+                    maxCount = currentCount
+                }
+            } else {
+                currentCount = 0
+            }
+        }
+        return maxCount
+    }
 }
