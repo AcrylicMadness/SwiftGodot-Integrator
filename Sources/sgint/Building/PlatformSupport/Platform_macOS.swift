@@ -20,12 +20,8 @@ struct Platform_macOS: Platform {
         let cmd = await "cd \(builder.driverPath.path) && swift build \(archConfig)--configuration \(builder.buildMode)"
         try await builder.run(cmd)
         
-        guard
-            let binPath = try await builder.run(cmd + " --show-bin-path", saveOutput: true)?
-                .trimmingCharacters(in: CharacterSet.newlines)
-        else {
-            throw Builder.BuildError.swiftBuildFailedToProvideBinariesPath
-        }
+        let binPath = try await builder.run(cmd + " --show-bin-path")
+            .trimmingCharacters(in: CharacterSet.newlines)
         
         guard let libraries = Array<String>(
             mirrorChildValuesOf: (

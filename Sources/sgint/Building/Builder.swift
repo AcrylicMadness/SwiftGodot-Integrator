@@ -8,6 +8,19 @@
 import Foundation
 
 actor Builder {
+    actor Output {
+        private(set) var content: String = ""
+        
+        func printLine(_ line: String) {
+            print(line, terminator: line.hasSuffix("\n") ? "" : "\n")
+            appendLine(line)
+        }
+        
+        func appendLine(_ line: String) {
+            content.appendLine(line)
+        }
+    }
+    
     let projectName: String
     let driverName: String
     let workingDirectory: URL
@@ -17,7 +30,7 @@ actor Builder {
     var buildMode: BuildMode = .debug
     var buildArchs: [Architecture]
     
-    private var logLabel: String?
+    private let output: Output = Output()
     
     init(
         projectName: String,
@@ -39,10 +52,6 @@ actor Builder {
         workingDirectory.appendingPathComponent("\(driverName)")
     }
     
-    func setLogLabel(_ logLabel: String) {
-        self.logLabel = logLabel
-    }
-    
     func setMode(_ buildMode: BuildMode) {
         self.buildMode = buildMode
     }
@@ -50,53 +59,54 @@ actor Builder {
     @discardableResult
     func run(
         _ command: String,
-        saveOutput: Bool = false
-    ) async throws -> String? {
-        print("Running:")
-        print(command)
-        
-        var output = ""
-        
-        let task = Process()
-        let pipe = Pipe()
-        
-        task.standardOutput = pipe
-        task.standardError = pipe
-        task.arguments = ["-c", command]
-        task.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        task.standardInput = nil
-
-        try task.run()
-        
-        try await withThrowingTaskGroup(of: String.self) { group in
-            group.addTask {
-                var localOutput = ""
-                for try await line in pipe.fileHandleForReading.bytes.lines {
-                    if saveOutput {
-                        localOutput += line + "\n"
-                    }
-                    print(line)
+    ) async throws -> String {
+        let outputPipe = Pipe()
+        let task = self.createProcess([command], outputPipe)
+        outputPipe.fileHandleForReading.readabilityHandler = { fileHandle in
+            if let line = self.saveOutput(outputPipe, fileHandle) {
+                // Far from the best way to do it, but AsyncBytes is not available on Linux
+                Task { @MainActor in
+                    await self.output.printLine(line)
                 }
-                return localOutput
-            }
-            task.waitUntilExit()
-            
-            if saveOutput {
-                output += try await group.next() ?? ""
-            }
-            
-            if task.terminationStatus != 0 {
-                print("Process exited with status \(task.terminationStatus)")
-                throw BuildError.buildFailed(terminationStatus: task.terminationStatus)
             }
         }
-        if saveOutput {
-            return output
-        } else {
-            return nil
+        try task.run()
+        task.waitUntilExit()
+        guard task.terminationStatus == 0 else {
+            throw BuildError.buildFailed(terminationStatus: task.terminationStatus)
         }
+        return await output.content
     }
     
+    private
+    func createProcess(
+        _ arguments: [String],
+        _ pipe: Pipe
+    ) -> Process {
+        let task = Process()
+        task.launchPath = "/bin/zsh"
+        task.arguments = ["-c"] + arguments
+        task.standardOutput = pipe
+        task.standardError = pipe
+        return task
+    }
+
+    private
+    nonisolated func saveOutput(
+        _ pipe: Pipe,
+        _ fileHandle: FileHandle
+    ) -> String? {
+        let data = fileHandle.availableData
+        guard data.count > 0 else {
+            pipe.fileHandleForReading.readabilityHandler = nil
+            return nil
+        }
+        guard let line = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        return line
+    }
+
     enum BuildError: Error {
         case buildFailed(terminationStatus: Int32)
         case swiftBuildFailedToProvideBinariesPath
