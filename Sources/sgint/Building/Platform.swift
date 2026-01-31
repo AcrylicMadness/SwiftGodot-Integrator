@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol Platform: Hashable {
+protocol Platform: Hashable, Sendable {
     var name: String { get }
     var libExtension: String { get }
     var libPrefix: String { get }
@@ -18,8 +18,8 @@ protocol Platform: Hashable {
     ) -> (driverLib: String, swiftGodotLib: String)
     
     func build(
-        using builder: Builder
-    ) async throws
+        using builder: ExtensionBuilder
+    ) async throws -> String
 }
 
 extension Platform {

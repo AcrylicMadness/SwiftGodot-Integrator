@@ -11,7 +11,7 @@ struct Platform_iOS: Platform {
     var name: String { "ios" }
     var libExtension: String { "framework" }
     
-    func build(using builder: Builder) async throws {
+    func build(using builder: ExtensionBuilder) async throws -> String {
         fatalError("iOS Not implemented")
     }
 }

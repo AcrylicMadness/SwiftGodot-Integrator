@@ -12,7 +12,7 @@ struct Platform_macOS: Platform {
     var libExtension: String { "dylib" }
     var libPrefix: String { "lib" }
     
-    func build(using builder: Builder) async throws {
+    func build(using builder: ExtensionBuilder) async throws -> String {
         let archConfig = await builder.buildArchs.reduce(into: "") { partialResult, arch in
             partialResult.append("--arch \(arch) ")
         }
@@ -23,44 +23,6 @@ struct Platform_macOS: Platform {
         let binPath = try await builder.run(cmd + " --show-bin-path")
             .trimmingCharacters(in: CharacterSet.newlines)
         
-        guard let libraries = Array<String>(
-            mirrorChildValuesOf: (
-                getLibNames(for: builder.driverName)
-            )
-        ) else {
-            throw Builder.BuildError.failedToMapBinariesPaths
-        }
-        
-        // TODO: Move copying logic into builder
-        for library in libraries {
-            print("Copying \(library)")
-            
-            let originUrl = URL(fileURLWithPath: binPath)
-                .appendingPathComponent(library)
-            
-            let destinationDirectoryUrl = await builder
-                .workingDirectory
-                .appendingPathComponent(builder.binFolderName)
-                .appendingPathComponent(builder.driverName)
-                .appendingPathComponent(name)
-                .appendingPathComponent(builder.buildMode.rawValue)
-            
-            
-            if !builder.fileManager.fileExists(atPath: destinationDirectoryUrl.path) {
-                try builder.fileManager.createDirectory(
-                    at: destinationDirectoryUrl,
-                    withIntermediateDirectories: true,
-                    attributes: nil)
-            }
-            
-            let destinationUrl = destinationDirectoryUrl
-                .appendingPathComponent(library)
-
-            if builder.fileManager.fileExists(atPath: destinationUrl.path) {
-                try builder.fileManager.removeItem(atPath: destinationUrl.path)
-            }
-            
-            try builder.fileManager.copyItem(at: originUrl, to: destinationUrl)
-        }
+        return binPath
     }
 }

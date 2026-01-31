@@ -53,7 +53,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "-c debug -a arm64"
+            argument = "-c debug -a aarch64"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

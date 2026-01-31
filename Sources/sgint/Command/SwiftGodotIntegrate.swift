@@ -86,20 +86,9 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
         case .setupVscodeActions:
             fatalError("Not implemented")
         }
-        
-        /*
-        print(
-            try TSCNEncoder().encode(
-                tscn: GDExtension(
-                    name: currentDriverName,
-                    platforms: [Platform_iOS(), Platform_macOS()]
-                ).tscnRepresentation
-            )
-        )
-         */
     }
     
-    // MARK: - Methods
+    // MARK: - Private Methods
     private mutating
     func validateTargets() throws {
         let currentTarget = try Target.current
@@ -121,7 +110,7 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
         driverName: String,
         projectName: String
     ) async throws {
-        let builder = Builder(
+        let builder = ExtensionBuilder(
             projectName: projectName,
             driverName: driverName,
             workingDirectory: workingDirectory,
@@ -134,18 +123,23 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
     }
     
     private mutating
-    func buildPlatforms(withBuilder builder: Builder) async throws {
+    func buildPlatforms(
+        withBuilder builder: ExtensionBuilder
+    ) async throws {
         for platform in platforms {
             for mode in configuration {
                 print("Building for target: \(platform.name)-\(mode)")
                 await builder.setMode(mode)
-                try await platform.build(using: builder)
+                let binPath = try await platform.build(using: builder)
+                try await builder.copyBinaries(from: binPath, for: platform)
             }
         }
     }
     
     private mutating
-    func makeExtensionFile(forDriver name: String) throws {
+    func makeExtensionFile(
+        forDriver name: String
+    ) throws {
         print("Creating .gdextension file")
         let gdExtension = GDExtension(
             name: name,
