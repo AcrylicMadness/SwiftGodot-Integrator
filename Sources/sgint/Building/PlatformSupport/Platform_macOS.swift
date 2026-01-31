@@ -12,7 +12,9 @@ struct Platform_macOS: Platform_Desktop {
     var libExtension: String { "dylib" }
     var libPrefix: String { "lib" }
     
-    func build(using builder: ExtensionBuilder) async throws -> String {
+    func build(
+        using builder: ExtensionBuilder
+    ) async throws -> String {
         return try await buildSwift(using: builder)
     }
 }

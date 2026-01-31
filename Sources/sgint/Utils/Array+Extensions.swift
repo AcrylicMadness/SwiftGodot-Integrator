@@ -15,3 +15,9 @@ extension Array {
         self = array
     }
 }
+
+extension Array where Element: Hashable {
+    func contains(array: Self) -> Bool{
+        Set(array).isSubset(of: Set(self))
+    }
+}

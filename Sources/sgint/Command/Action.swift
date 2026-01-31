@@ -11,7 +11,6 @@ import Foundation
 enum Action: String, CaseIterable, ExpressibleByArgument {
     case integrate
     case build
-    case export
     case setupVscodeActions
     
     var requiresTargetValidation: Bool {
@@ -35,11 +34,6 @@ enum Action: String, CaseIterable, ExpressibleByArgument {
             return 
                 """
                 Builds swift code for provided platforms, moves resulting files to res://bin and configures .gdextension file.
-                """
-        case .export:
-            return
-                """
-                Builds swift code and exports templates.
                 """
         case .setupVscodeActions:
             return 

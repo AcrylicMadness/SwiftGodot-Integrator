@@ -132,7 +132,7 @@ actor ExtensionBuilder {
             let destinationDirectoryUrl = workingDirectory
                 .appendingPathComponent(binFolderName)
                 .appendingPathComponent(driverName)
-                .appendingPathComponent("\(platform.name)-\(arch.rawValue)")
+                .appendingPathComponent(platform.directory(for: arch))
                 .appendingPathComponent(buildMode.rawValue)
             
             if !fileManager.fileExists(atPath: destinationDirectoryUrl.path) {

@@ -51,15 +51,24 @@ struct GDExtension {
         
         for mode in buildModes {
             for platform in platforms {
-                for arch in archs {
-                    let target = "\(platform.name).\(mode.rawValue).\(arch.alias)"
-                    let (driverLib, swiftGodotLib) = platform.getLibNames(for: name)
-                    
-                    let baseLocation = "\(binLocation)/\(name)/\(platform.name)-\(arch.rawValue)/\(mode.rawValue)"
-                    
-                    let driverLocation = "\(baseLocation)/\(driverLib)"
-                    let swiftGodotLocation = "\(baseLocation)/\(swiftGodotLib)"
-                    
+                if platform.separateArchs {
+                    for arch in archs {
+                        // Different entries for different archs
+                        let (
+                            target,
+                            driverLocation,
+                            swiftGodotLocation
+                        ) = tscnEntry(for: platform, in: mode, for: arch)
+                        libraries[target] = driverLocation
+                        dependencies[target] = [swiftGodotLocation: ""]
+                    }
+                } else {
+                    // A single entry, right now only for iOS / iOS Simulator
+                    let (
+                        target,
+                        driverLocation,
+                        swiftGodotLocation
+                    ) = tscnEntry(for: platform, in: mode, for: nil)
                     libraries[target] = driverLocation
                     dependencies[target] = [swiftGodotLocation: ""]
                 }
@@ -70,6 +79,24 @@ struct GDExtension {
             "libraries": libraries,
             "dependencies": dependencies
         ]
+    }
+    
+    private
+    func tscnEntry(
+        for platform: any Platform,
+        in mode: BuildMode,
+        for arch: Architecture?
+    ) -> (String, String, String) {
+        var target = "\(platform.name).\(mode.rawValue)"
+        if let arch {
+            target += ".\(arch.alias)"
+        }
+        let (driverLib, swiftGodotLib) = platform.getLibNames(for: name)
+        let baseLocation = "\(binLocation)/\(name)/\(platform.directory(for: arch))/\(mode.rawValue)"
+        let driverLocation = "\(baseLocation)/\(driverLib)"
+        let swiftGodotLocation = "\(baseLocation)/\(swiftGodotLib)"
+        
+        return (target, driverLocation, swiftGodotLocation)
     }
     
     struct Configuration: Hashable, Codable {

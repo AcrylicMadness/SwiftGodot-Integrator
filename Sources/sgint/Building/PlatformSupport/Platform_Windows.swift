@@ -11,7 +11,9 @@ struct Platform_Windows: Platform_Desktop {
     var name: String { "windows" }
     var libExtension: String { "dll" }
     
-    func build(using builder: ExtensionBuilder) async throws -> String {
+    func build(
+        using builder: ExtensionBuilder
+    ) async throws -> String {
         return try await buildSwift(using: builder)
     }
 }

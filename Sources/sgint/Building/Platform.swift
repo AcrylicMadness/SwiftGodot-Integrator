@@ -12,6 +12,10 @@ protocol Platform: Hashable, Sendable {
     var libExtension: String { get }
     var libPrefix: String { get }
     var swiftGodotLibName: String { get }
+    var supportedArchs: [Architecture] { get }
+    var separateArchs: Bool { get }
+    var id: String { get }
+    func directory(for arch: Architecture?) -> String
     
     func getLibNames(
         for driverName: String
@@ -23,12 +27,17 @@ protocol Platform: Hashable, Sendable {
 }
 
 extension Platform {
-    var swiftGodotLibName: String {
-        libPrefix + "SwiftGodot"
-    }
+    var libPrefix: String { "" }
+    var separateArchs: Bool { true }
+    var supportedArchs: [Architecture] { [.aarch64, .x86_64] }
+    var id: String { name }
+    var swiftGodotLibName: String { libPrefix + "SwiftGodot" }
     
-    var libPrefix: String {
-        ""
+    func directory(for arch: Architecture?) -> String {
+        guard let arch, separateArchs else {
+            return name
+        }
+        return "\(id)-\(arch.rawValue)"
     }
     
     func getLibNames(

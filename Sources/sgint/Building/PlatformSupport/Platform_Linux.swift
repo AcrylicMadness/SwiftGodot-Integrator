@@ -12,7 +12,9 @@ struct Platform_Linux: Platform_Desktop {
     var libExtension: String { "so" }
     var libPrefix: String { "lib" }
     
-    func build(using builder: ExtensionBuilder) async throws -> String {
+    func build(
+        using builder: ExtensionBuilder
+    ) async throws -> String {
         return try await buildSwift(using: builder)
     }
 }

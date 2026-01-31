@@ -11,12 +11,15 @@ import Foundation
 enum Target: String, Decodable, CaseIterable, ExpressibleByArgument {
     case macos
     case ios
+    case iossimulator
     case linux
     
     var associatedPlatform: any Platform {
         switch self {
         case .ios:
-            return Platform_iOS()
+            return Platform_iOS_Device()
+        case .iossimulator:
+            return Platform_iOS_Simulator()
         case .macos:
             return Platform_macOS()
         case .linux:
@@ -39,5 +42,6 @@ enum Target: String, Decodable, CaseIterable, ExpressibleByArgument {
         case platfromUnsupportedBySgint
         case iosBuildsRequireMacOS
         case crossCompilingIsNotSupported
+        case cannotBuildForBothDeviceAndSimulator
     }
 }

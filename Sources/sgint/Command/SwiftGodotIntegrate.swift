@@ -32,15 +32,21 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
     
     @Option(
         name: .shortAndLong,
-        help: "Build configurations to use"
+        help: "Build configurations to use."
     )
     var configuration: [BuildMode] = [.debug]
     
     @Option(
         name: .shortAndLong,
-        help: "Architectures to build for"
+        help: "Architectures to build for."
     )
     var arch: [Architecture] = []
+    
+    @Flag(
+        name: .shortAndLong,
+        help: "Exports project after build is completed."
+    )
+    var export: Bool = false
     
     // MARK: - Properties
     private lazy var binFolderName: String = "bin"
@@ -58,12 +64,7 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
     var platforms: [any Platform] {
         targets.map({ $0.associatedPlatform })
     }
-
-    // 20 Build binaries for specified platform (or auto-detect current platform)
-    // 30 Move binaries to bin folder (create if needed)
-    // 40 Generate and output gdextension manifest
     
-    // Add option to setup vscode actions
     // MARK: - Command Execution
     mutating func run() async throws {
         if action.requiresTargetValidation {
@@ -87,8 +88,6 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
                 driverName: currentDriverName,
                 projectName: currentProjectName
             )
-        case .export:
-            fatalError("Not implemented")
         case .setupVscodeActions:
             fatalError("Not implemented")
         }
@@ -102,12 +101,23 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
             targets.append(currentTarget)
         }
         for target in targets {
-            if target == .ios, currentTarget != .macos {
-                throw Target.TargetDetectError.iosBuildsRequireMacOS
+            if [.ios, .iossimulator].contains(target) {
+                // iOS and iOS Simulator can be built only on macOS through Xcode
+                if currentTarget != .macos {
+                    throw Target.TargetDetectError.iosBuildsRequireMacOS
+                }
+            } else {
+                // Cross-compiling is not supported yet
+                // I will look into Swift Linux Static SDK later
+                if currentTarget != target {
+                    throw Target.TargetDetectError.crossCompilingIsNotSupported
+                }
             }
-            if target != .ios, currentTarget != target {
-                throw Target.TargetDetectError.crossCompilingIsNotSupported
-            }
+        }
+        // GDExtension does not support separate entries for iOS and iOS Simulator
+        // So only one of those should be built at a time
+        if targets.contains(array: [.ios, .iossimulator]) {
+            throw Target.TargetDetectError.cannotBuildForBothDeviceAndSimulator
         }
     }
     
@@ -123,24 +133,59 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
             binFolderName: binFolderName,
             fileManager: fileManager
         )
-        try await buildPlatforms(withBuilder: builder)
+        try await buildRequestedPlatforms(withBuilder: builder)
         try makeExtensionFile(forDriver: driverName)
     }
     
     private mutating
-    func buildPlatforms(
+    func buildRequestedPlatforms(
         withBuilder builder: ExtensionBuilder
     ) async throws {
         for platform in platforms {
             for mode in configuration {
-                for architecture in arch {
-                    print("Building for: \(platform.name)-\(mode)-\(architecture.rawValue)")
-                    await builder.prepare(forMode: mode, with: architecture)
-                    let binPath = try await platform.build(using: builder)
-                    try await builder.copyExtensionBinaries(from: binPath, for: platform, with: architecture)
+                if platform.separateArchs {
+                    // Build for requested architectures separately
+                    for architecture in arch {
+                        guard platform.supportedArchs.contains(architecture) else {
+                            print("Skipping \(architecture.rawValue) build for \(platform.name)")
+                            continue
+                        }
+                        try await buildPlatform(
+                            platform,
+                            for: architecture,
+                            in: mode,
+                            withBuilder: builder
+                        )
+                    }
+                } else {
+                    // For iOS, xcodebuild manages architectures on its own
+                    // Passed architecture here will be ignored
+                    try await buildPlatform(
+                        platform,
+                        for: .aarch64,
+                        in: mode,
+                        withBuilder: builder
+                    )
                 }
             }
         }
+    }
+    
+    private
+    func buildPlatform(
+        _ platform: any Platform,
+        for architecture: Architecture,
+        in mode: BuildMode,
+        withBuilder builder: ExtensionBuilder
+    ) async throws {
+        print("Building for: \(platform.id)-\(mode)-\(architecture.rawValue)")
+        await builder.prepare(forMode: mode, with: architecture)
+        let binPath = try await platform.build(using: builder)
+        try await builder.copyExtensionBinaries(
+            from: binPath,
+            for: platform,
+            with: architecture
+        )
     }
     
     private mutating
