@@ -93,8 +93,10 @@ actor ExtensionBuilder {
         _ command: String,
     ) async throws -> String {
         print("Running: \(command)")
+        
         let outputPipe = Pipe()
         let task = try self.createProcess([command], outputPipe)
+        
         outputPipe.fileHandleForReading.readabilityHandler = { [weak self] fileHandle in
             if let line = self?.getOutput(outputPipe, fileHandle) {
                 // Far from the best way to do it, but AsyncBytes is not available on Linux
@@ -105,6 +107,7 @@ actor ExtensionBuilder {
         }
         try task.run()
         task.waitUntilExit()
+        
         guard task.terminationStatus == 0 else {
             throw BuildError.buildFailed(terminationStatus: task.terminationStatus)
         }

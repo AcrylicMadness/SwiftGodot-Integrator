@@ -21,18 +21,21 @@ class SwiftPackagePatcher {
     private var suppressWarnings: Bool
     private var useEntryPointGenerator: Bool
     
+    private let swiftGodotDependency: String = "SwiftGodot"
+    private let entryPointGenerator: String = "EntryPointGeneratorPlugin"
+    
     private lazy var patches: [Patch] = {
         let dynamicLibraryPatch = Patch(
             additionalLines: ["type: .dynamic,"],
             patchingSection: "library",
             insertAfter: "name:"
         )
-        var targetLines = ["dependencies: [ \"SwiftGodot\"],"]
+        var targetLines = ["dependencies: [ \"\(swiftGodotDependency)\"],"]
         if suppressWarnings {
             targetLines.append("swiftSettings: [.unsafeFlags([\"-suppress-warnings\"])],")
         }
         if useEntryPointGenerator {
-            targetLines.append("plugins: [.plugin(name: \"EntryPointGeneratorPlugin\", package: \"SwiftGodot\")]")
+            targetLines.append("plugins: [.plugin(name: \"\(entryPointGenerator)\", package: \"\(swiftGodotDependency)\")]")
         }
         let targetPatch = Patch(
             additionalLines: targetLines,
@@ -104,8 +107,14 @@ class SwiftPackagePatcher {
                     )
                 }
                 if let insertionIndex {
+                    if lines[insertionIndex + lineIndex].last != "," {
+                        lines[insertionIndex + lineIndex].append(",")
+                    }
                     lines.insert(newLine, at: insertionIndex + lineIndex + 1)
                 } else {
+                    if lines.last?.last != "," {
+                        lines[lines.count - 1].append(",")
+                    }
                     lines.append(newLine)
                 }
             }
@@ -113,5 +122,9 @@ class SwiftPackagePatcher {
             contents.removeSubrange(match.1.startIndex..<match.1.endIndex)
             contents.insert(contentsOf: patchedSection, at: match.1.startIndex)
         }
+    }
+    
+    enum PatchingError: Error {
+        case packageSwiftIsEmpty
     }
 }

@@ -52,6 +52,7 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
     private lazy var binFolderName: String = "bin"
     private lazy var templateLoader: ResourceLoader = .templateLoader
     private lazy var tscnEncoder: TSCNEncoder = TSCNEncoder(separateSections: true)
+    private lazy var packageGenerator: SwiftPackageGenerator = SwiftPackageGenerator()
     
     private var fileManager: FileManager {
         FileManager.default
@@ -78,16 +79,22 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
         let currentProjectName = projectName ?? workingDirectory.lastPathComponent
         let currentDriverName = driverName ?? "\(currentProjectName.alphanumerics)Driver"
         
-        printBuildConfig(projectName: currentProjectName)
+        let builder = try ExtensionBuilder(
+            projectName: currentProjectName,
+            driverName: currentDriverName,
+            workingDirectory: workingDirectory,
+            binFolderName: binFolderName,
+            fileManager: fileManager
+        )
         
         switch action {
         case .integrate:
-            fatalError("Not implemented")
+            // TODO: Validate that Swift Package does not exist
+            try await packageGenerator.generate(with: builder)
         case .build:
-            try await buildExtension(
-                driverName: currentDriverName,
-                projectName: currentProjectName
-            )
+            printBuildConfig(projectName: currentProjectName)
+            try await buildRequestedPlatforms(withBuilder: builder)
+            try makeExtensionFile(forDriver: currentDriverName)
         case .setupVscodeActions:
             fatalError("Not implemented")
         }
@@ -119,22 +126,6 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
         if targets.contains(array: [.ios, .iossimulator]) {
             throw Target.TargetDetectError.cannotBuildForBothDeviceAndSimulator
         }
-    }
-    
-    private mutating
-    func buildExtension(
-        driverName: String,
-        projectName: String
-    ) async throws {
-        let builder = try ExtensionBuilder(
-            projectName: projectName,
-            driverName: driverName,
-            workingDirectory: workingDirectory,
-            binFolderName: binFolderName,
-            fileManager: fileManager
-        )
-        try await buildRequestedPlatforms(withBuilder: builder)
-        try makeExtensionFile(forDriver: driverName)
     }
     
     private mutating
