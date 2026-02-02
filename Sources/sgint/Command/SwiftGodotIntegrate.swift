@@ -188,7 +188,7 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
             for: platform,
             with: architecture
         )
-        if let swiftRuntimePath = try await platform.getRuntimeLibPath(using: builder) {
+        if let swiftRuntimePath = try await platform.getSwiftRuntimePath(using: builder) {
             let runtimeLibraries = try await builder.identifyAndCopyRuntimeLibraries(
                 from: swiftRuntimePath,
                 for: platform,
