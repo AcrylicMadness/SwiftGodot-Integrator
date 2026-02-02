@@ -60,6 +60,10 @@ protocol Platform: Hashable, Sendable {
     func build(
         using builder: ExtensionBuilder
     ) async throws -> String
+    
+    func getSwiftRuntimePath(
+        using builder: ExtensionBuilder
+    ) async throws -> String?
 }
 
 extension Platform {
@@ -95,5 +99,11 @@ extension Platform {
                 swiftGodotLib: "\(swiftGodotLibName).\(ext)"
             )
         }
+    }
+    
+    func getSwiftRuntimePath(
+        using builder: ExtensionBuilder
+    ) async throws -> String? {
+        nil
     }
 }
