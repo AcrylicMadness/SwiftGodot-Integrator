@@ -9,7 +9,7 @@ import Foundation
 
 struct Platform_Linux: Platform_Desktop {
     var name: String { "linux" }
-    var libExtension: String { "so" }
+    var mainLibExtension: String { "so" }
     var libPrefix: String { "lib" }
     
     func build(

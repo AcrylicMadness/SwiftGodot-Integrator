@@ -119,10 +119,11 @@ actor ExtensionBuilder {
         for platform: any Platform,
         with arch: Architecture
     ) throws {
-        guard let libraries = Array<String>(
-            mirrorChildValuesOf: (
-                platform.getLibNames(for: driverName)
-            )
+        // On Windows, we also need to copy .pdp and .lib files,
+        // but there is no need to specify them in .gdextension
+        guard let libraries = getLibrariesToCopy(
+            for: platform,
+            with: driverName
         ) else {
             throw ExtensionBuilder.BuildError.failedToMapBinariesPaths
         }
@@ -190,6 +191,28 @@ actor ExtensionBuilder {
             return nil
         }
         return line
+    }
+    
+    private
+    func getLibrariesToCopy(
+        for platform: any Platform,
+        with driverName: String
+    ) -> [String]? {
+        guard let mainLibraries = Array<String>(
+            mirrorChildValuesOf: (
+                platform.getMainLibNames(for: driverName)
+            )
+        ) else {
+            return nil
+        }
+        guard let additionalLibraries = Array<String>(
+            mirrorChildValuesOf: (
+                platform.getAdditionalLibNames(for: driverName)
+            )
+        ) else {
+            return nil
+        }
+        return mainLibraries + additionalLibraries
     }
 
     enum BuildError: Error {

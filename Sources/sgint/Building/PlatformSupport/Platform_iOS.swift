@@ -12,7 +12,7 @@ protocol Platform_iOS: Platform {
 }
 
 extension Platform_iOS {
-    var libExtension: String { "framework" }
+    var mainLibExtension: String { "framework" }
     var separateArchs: Bool { false }
 
     func build(

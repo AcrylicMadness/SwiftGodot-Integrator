@@ -9,7 +9,10 @@ import Foundation
 
 struct Platform_Windows: Platform_Desktop {
     var name: String { "windows" }
-    var libExtension: String { "dll" }
+    var mainLibExtension: String { "dll" }
+    var debugInfoFormat: String? { "codeview" }
+    // On Windows, we need to copy .pdp and .lib files as well
+    var additionalLibExtension: [String] { ["pdp", "lib"] }
     
     func build(
         using builder: ExtensionBuilder

@@ -7,19 +7,28 @@
 import Foundation
 
 protocol Platform_Desktop: Platform {
+    
+    var debugInfoFormat: String? { get }
+    
     func buildSwift(
         using builder: ExtensionBuilder
     ) async throws -> String
 }
 
 extension Platform_Desktop {
+    
+    var debugInfoFormat: String? { nil }
         
     func buildSwift(
         using builder: ExtensionBuilder
     ) async throws -> String {
         let archConfig = "--arch \(await builder.buildArch)"
         
-        let cmd = await "cd \(builder.driverPath.path) && swift build \(archConfig) --configuration \(builder.buildMode)"
+        var cmd = await "cd \(builder.driverPath.path) && swift build \(archConfig) --configuration \(builder.buildMode)"
+        
+        if let debugInfoFormat {
+            cmd += " --deb-debug-info-format " + debugInfoFormat
+        }
         try await builder.run(cmd)
         
         let binPath = try await builder.run(cmd + " --show-bin-path")

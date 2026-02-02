@@ -9,7 +9,7 @@ import Foundation
 
 struct Platform_macOS: Platform_Desktop {
     var name: String { "macos" }
-    var libExtension: String { "dylib" }
+    var mainLibExtension: String { "dylib" }
     var libPrefix: String { "lib" }
     
     func build(

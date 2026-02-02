@@ -91,7 +91,7 @@ struct GDExtension {
         if let arch {
             target += ".\(arch.alias)"
         }
-        let (driverLib, swiftGodotLib) = platform.getLibNames(for: name)
+        let (driverLib, swiftGodotLib) = platform.getMainLibNames(for: name)
         let baseLocation = "\(binLocation)/\(name)/\(platform.directory(for: arch))/\(mode.rawValue)"
         let driverLocation = "\(baseLocation)/\(driverLib)"
         let swiftGodotLocation = "\(baseLocation)/\(swiftGodotLib)"
