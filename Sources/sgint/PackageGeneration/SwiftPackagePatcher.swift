@@ -27,20 +27,26 @@ class SwiftPackagePatcher {
     private let entryPointGenerator: String = "EntryPointGeneratorPlugin"
     
     private lazy var patches: [Patch] = {
+        // Set minimum platform versions required by SwiftGodot
         let platformPatch = Patch(
             additionalLines: ["platforms: [.macOS(\(macOsVersion)), .iOS(\(iosVersion))],"],
             patchingSection: nil,
             insertAfter: "name:"
         )
+        // Make library dynamic
         let dynamicLibraryPatch = Patch(
             additionalLines: ["type: .dynamic,"],
             patchingSection: "library",
             insertAfter: "name:"
         )
+        // Add SwiftGodot as dependency to main target
         var targetLines = ["dependencies: [ \"\(swiftGodotDependency)\"],"]
+        // Supress warnings is requested
         if suppressWarnings {
             targetLines.append("swiftSettings: [.unsafeFlags([\"-suppress-warnings\"])],")
         }
+        // Use entry point generator, to avoiod manually
+        // exposing each class to Godot
         if useEntryPointGenerator {
             targetLines.append("plugins: [.plugin(name: \"\(entryPointGenerator)\", package: \"\(swiftGodotDependency)\")]")
         }

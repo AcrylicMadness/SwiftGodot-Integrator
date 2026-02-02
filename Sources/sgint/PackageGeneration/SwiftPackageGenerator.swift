@@ -11,10 +11,17 @@ actor SwiftPackageGenerator {
         
     func generate(
         with builder: ExtensionBuilder,
-        supressWarnings: Bool = true,
+        supressWarnings: Bool = false,
         useEntryPointGenerator: Bool = true
     ) async throws {
         print("Creating Swift Package \(builder.driverName)")
+        // We create standard library and then patch its definition
+        // to turn it into dynamic library.
+        // The other approach is to run
+        // swift package init --name (name) --type empty
+        // swift package add-product --type dynamic-library --name (name)
+        // But this approach will not auto-generate complete
+        // file structure (that includes test).
         let setup = await [
             "mkdir \(builder.driverPath.path)",
             "cd \(builder.driverPath.path) && swift package init --name \(builder.driverName) --type library",
@@ -24,6 +31,7 @@ actor SwiftPackageGenerator {
             try await builder.run(command)
         }
         print("Setting up required dependencies")
+        // Edit Package.swift to work with SwiftGodot
         let patcher = try await SwiftPackagePatcher(
             macOsVersion: ".v15",
             iosVersion: ".v17",
