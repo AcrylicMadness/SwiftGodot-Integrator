@@ -24,11 +24,16 @@ extension Platform_Desktop {
     ) async throws -> String {
         let archConfig = "--arch \(await builder.buildArch)"
         
-        var cmd = await "cd \(builder.driverPath.path) && swift build \(archConfig) --configuration \(builder.buildMode)"
-        
+        var commands = await [
+            "cd \(builder.driverPath.path)",
+            "&&",
+            "swift build \(archConfig)",
+            "--configuration \(builder.buildMode)"
+        ]
         if let debugInfoFormat {
-            cmd += " --deb-debug-info-format " + debugInfoFormat
+            commands.append(" --deb-debug-info-format \(debugInfoFormat)")
         }
+        let cmd = commands.joined(separator: " ")
         try await builder.run(cmd)
         
         let binPath = try await builder.run(cmd + " --show-bin-path")

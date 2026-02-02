@@ -6,7 +6,7 @@ import Foundation
 @main
 struct SwiftGodotIntegrate: AsyncParsableCommand {
     
-    // MARK: - Command arguments
+    // MARK: - Command Arguments
     @Argument(
         help: "Action to perform. Defaults to build. Available: \n\n\(Action.helpMessage)"
     )
@@ -121,7 +121,7 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
                 }
             }
         }
-        // GDExtension does not support separate entries for iOS and iOS Simulator
+        // Godot Extensions do not support separate entries for iOS and iOS Simulator
         // So only one of those should be built at a time
         if targets.contains(array: [.ios, .iossimulator]) {
             throw Target.TargetDetectError.cannotBuildForBothDeviceAndSimulator

@@ -26,11 +26,18 @@ extension Platform_iOS {
         if builder.fileManager.fileExists(atPath: archivePath) {
             try builder.fileManager.removeItem(atPath: archivePath)
         }
-
         // Build SwiftGodot driver as .xcarchive through xcbuild
-        let command = "cd \(driverPath) && xcodebuild archive -scheme \(builder.driverName) -configuration \(buildModeName) -archivePath ./xcodebuild -destination '\(destination)'"
+        let command = [
+            "cd \(driverPath)",
+            "&&",
+            "xcodebuild archive",
+            "-scheme \(builder.driverName)",
+            "-configuration \(buildModeName)",
+            "-archivePath ./xcodebuild",
+            "-destination '\(destination)'"
+        ]
         
-        try await builder.run(command)
+        try await builder.run(command.joined(separator: " "))
         
         return "\(driverPath)/xcodebuild.xcarchive/Products/usr/local/lib/"
         // TODO: Remove xcarchive and all build artifacts after
