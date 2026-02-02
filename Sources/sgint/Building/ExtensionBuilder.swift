@@ -30,8 +30,9 @@ actor ExtensionBuilder {
     }
     
     enum ShellType: String, CaseIterable {
-        case zsh
-        case sh
+        case zsh = "/bin/zsh"
+        case sh = "/bin/sh"
+        case cmd = "C:\\Windows\\System32\\cmd.exe"
     }
     
     // MARK: - Properties
@@ -70,7 +71,7 @@ actor ExtensionBuilder {
         
         var detectedShellUrl: URL?
         
-        for path in ShellType.allCases.map({ "/bin/\($0.rawValue)" }) {
+        for path in ShellType.allCases.map({ $0.rawValue }) {
             if fileManager.fileExists(atPath: path) {
                 detectedShellUrl = URL(fileURLWithPath: path)
                 print("Using \(path)")
@@ -202,7 +203,11 @@ actor ExtensionBuilder {
     ) throws -> Process {
         let task = Process()
         task.executableURL = shellUrl
+#if os(Windows)
+        task.arguments = ["/c"] + arguments
+#else
         task.arguments = ["-c"] + arguments
+#endif
         task.standardOutput = pipe
         task.standardError = pipe
         return task

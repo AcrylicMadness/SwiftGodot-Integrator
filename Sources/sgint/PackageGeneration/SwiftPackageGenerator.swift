@@ -22,10 +22,13 @@ actor SwiftPackageGenerator {
         // swift package add-product --type dynamic-library --name (name)
         // But this approach will not auto-generate complete
         // file structure (that includes test).
-        let setup = await [
-            "mkdir \(builder.driverPath.path)",
-            "cd \(builder.driverPath.path) && swift package init --name \(builder.driverName) --type library",
-            "cd \(builder.driverPath.path) && swift package add-dependency \(swiftGodotRemote) --branch main"
+        try await builder.fileManager.createDirectory(
+            at: builder.driverPath, 
+            withIntermediateDirectories: true
+        )
+        let setup = [
+            "cd \(builder.driverName) && swift package init --name \(builder.driverName) --type library",
+            "cd \(builder.driverName) && swift package add-dependency \(swiftGodotRemote) --branch main"
         ]
         for command in setup {
             try await builder.run(command)

@@ -19,4 +19,37 @@ struct Platform_Windows: Platform_Desktop {
     ) async throws -> String {
         return try await buildSwift(using: builder)
     }
+
+    func getSwiftRuntimePath(
+        using builder: ExtensionBuilder
+    ) async throws -> String? {
+        // Get Swift version
+        // Then get runtime from
+        // %LocalAppData%\Programs\Swift\Runtimes\(version)\usr\bin
+
+        let cmd = "swift -v"
+        guard let swiftInfoString = try await builder
+            .run(cmd)
+            .split(separator: "\n")
+            .first 
+        else {
+            return nil
+        }
+        let version = String(swiftInfoString
+            .split(separator: " ")[2]
+        )
+
+        let runtimeDir = builder.fileManager.homeDirectoryForCurrentUser
+            .appendingPathComponent("AppData")
+            .appendingPathComponent("Local")
+            .appendingPathComponent("Programs")
+            .appendingPathComponent("Swift")
+            .appendingPathComponent("Runtimes")
+            .appendingPathComponent(version)
+            .appendingPathComponent("usr")
+            .appendingPathComponent("bin")
+            .path
+
+        return runtimeDir
+    }
 }
