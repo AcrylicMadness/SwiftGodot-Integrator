@@ -61,7 +61,7 @@ protocol Platform: Hashable, Sendable {
         using builder: ExtensionBuilder
     ) async throws -> String
     
-    func getRuntimeLibPath(
+    func getSwiftRuntimePath(
         using builder: ExtensionBuilder
     ) async throws -> String?
 }
@@ -101,7 +101,7 @@ extension Platform {
         }
     }
     
-    func getRuntimeLibPath(
+    func getSwiftRuntimePath(
         using builder: ExtensionBuilder
     ) async throws -> String? {
         nil
