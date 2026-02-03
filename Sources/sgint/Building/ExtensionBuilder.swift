@@ -139,11 +139,15 @@ actor ExtensionBuilder {
             print("Copying extension library: \(library)")
             
             let originDirectoryUrl = URL(fileURLWithPath: binPath)
-            
-            try copyToBin(
-                originalName: library,
+            let destinationDirectoryUrl = binDestinationDirectory(
+                for: platform,
+                with: arch,
+                appending: buildMode.rawValue
+            )
+            try copyFile(
+                named: library,
                 from: originDirectoryUrl,
-                platform: platform
+                to: destinationDirectoryUrl
             )
         }
     }
@@ -161,11 +165,15 @@ actor ExtensionBuilder {
                 print("Copying Swift Runtime library: \(fileName)")
                 
                 let originDirectoryUrl = URL(fileURLWithPath: binPath)
-                
-                try copyToBin(
-                    originalName: fileName,
+                let destinationDirectoryUrl = binDestinationDirectory(
+                    for: platform,
+                    with: arch,
+                    appending: swiftRuntimeDirName
+                )
+                try copyFile(
+                    named: fileName,
                     from: originDirectoryUrl,
-                    platform: platform
+                    to: destinationDirectoryUrl
                 )
                 runtimeLibraries.append(fileName)
             }
@@ -244,18 +252,13 @@ actor ExtensionBuilder {
     }
     
     private
-    func copyToBin(
-        originalName filename: String,
+    func copyFile(
+        named filename: String,
         from originDirectoryUrl: URL,
-        platform: any Platform
+        to destinationDirectoryUrl: URL
     ) throws {
         let originFileUrl = originDirectoryUrl
             .appendingPathComponent(filename)
-        
-        let destinationDirectoryUrl = workingDirectory
-            .appendingPathComponent(binFolderName)
-        
-        let outputName = "\(platform.directory(for: buildArch)).\(buildMode.rawValue).\(filename)"
         
         if !fileManager.fileExists(atPath: destinationDirectoryUrl.path) {
             try fileManager.createDirectory(
@@ -265,7 +268,7 @@ actor ExtensionBuilder {
             )
         }
         let destinationFileUrl = destinationDirectoryUrl
-            .appendingPathComponent(outputName)
+            .appendingPathComponent(filename)
         
         if fileManager.fileExists(atPath: destinationFileUrl.path) {
             try fileManager.removeItem(atPath: destinationFileUrl.path)
