@@ -141,8 +141,7 @@ actor ExtensionBuilder {
             let originDirectoryUrl = URL(fileURLWithPath: binPath)
             let destinationDirectoryUrl = binDestinationDirectory(
                 for: platform,
-                with: arch,
-                appending: buildMode.rawValue
+                with: arch
             )
             try copyFile(
                 named: library,
@@ -167,8 +166,7 @@ actor ExtensionBuilder {
                 let originDirectoryUrl = URL(fileURLWithPath: binPath)
                 let destinationDirectoryUrl = binDestinationDirectory(
                     for: platform,
-                    with: arch,
-                    appending: swiftRuntimeDirName
+                    with: arch
                 )
                 try copyFile(
                     named: fileName,
@@ -185,14 +183,13 @@ actor ExtensionBuilder {
     /// - Returns: Directory URL with format: `bin/(driver)/(platform)-(arch)/(component)`
     func binDestinationDirectory(
         for platform: any Platform,
-        with arch: Architecture?,
-        appending component: String
+        with arch: Architecture?
     ) -> URL {
         workingDirectory
             .appendingPathComponent(binFolderName)
             .appendingPathComponent(driverName)
             .appendingPathComponent(platform.directory(for: arch))
-            .appendingPathComponent(component)
+            .appendingPathComponent(buildMode.rawValue)
     }
     
     // MARK: - Private Methods

@@ -216,6 +216,7 @@ struct SwiftGodotIntegrate: AsyncParsableCommand {
         let content = try tscnEncoder.encode(tscn: gdExtension.tscnRepresentation)
         let outputUrl = workingDirectory
             .appendingPathComponent(binFolderName)
+            .appendingPathComponent(name)
             .appendingPathComponent("\(name).gdextension")
         try content.write(to: outputUrl, atomically: true, encoding: .utf8)
     }
