@@ -1,6 +1,6 @@
 # SwiftGodot Integrator (or sgint, for short) #
 
-A simple cross-platform command line tool that building [SwiftGodot](https://github.com/migueldeicaza/SwiftGodot)-based GDExtensions easier.
+A simple cross-platform command line tool that makes building [SwiftGodot](https://github.com/migueldeicaza/SwiftGodot)-based GDExtensions easier.
 On Linux and Windows it will also embed Swift Runtime into extension and reference it in .gdextension file, which is necessary for the extension to function properly on these platforms.
 
 Requires [Swift Toolchain](https://www.swift.org/install/).
