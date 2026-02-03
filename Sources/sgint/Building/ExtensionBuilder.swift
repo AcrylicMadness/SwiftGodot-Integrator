@@ -30,8 +30,9 @@ actor ExtensionBuilder {
     }
     
     enum ShellType: String, CaseIterable {
-        case zsh
-        case sh
+        case zsh = "/bin/zsh"
+        case sh = "/bin/sh"
+        case cmd = "C:\\Windows\\System32\\cmd.exe"
     }
     
     // MARK: - Properties
@@ -70,7 +71,7 @@ actor ExtensionBuilder {
         
         var detectedShellUrl: URL?
         
-        for path in ShellType.allCases.map({ "/bin/\($0.rawValue)" }) {
+        for path in ShellType.allCases.map({ $0.rawValue }) {
             if fileManager.fileExists(atPath: path) {
                 detectedShellUrl = URL(fileURLWithPath: path)
                 print("Using \(path)")
@@ -140,8 +141,7 @@ actor ExtensionBuilder {
             let originDirectoryUrl = URL(fileURLWithPath: binPath)
             let destinationDirectoryUrl = binDestinationDirectory(
                 for: platform,
-                with: arch,
-                appending: buildMode.rawValue
+                with: arch
             )
             try copyFile(
                 named: library,
@@ -166,8 +166,7 @@ actor ExtensionBuilder {
                 let originDirectoryUrl = URL(fileURLWithPath: binPath)
                 let destinationDirectoryUrl = binDestinationDirectory(
                     for: platform,
-                    with: arch,
-                    appending: swiftRuntimeDirName
+                    with: arch
                 )
                 try copyFile(
                     named: fileName,
@@ -184,14 +183,13 @@ actor ExtensionBuilder {
     /// - Returns: Directory URL with format: `bin/(driver)/(platform)-(arch)/(component)`
     func binDestinationDirectory(
         for platform: any Platform,
-        with arch: Architecture?,
-        appending component: String
+        with arch: Architecture?
     ) -> URL {
         workingDirectory
             .appendingPathComponent(binFolderName)
             .appendingPathComponent(driverName)
             .appendingPathComponent(platform.directory(for: arch))
-            .appendingPathComponent(component)
+            .appendingPathComponent(buildMode.rawValue)
     }
     
     // MARK: - Private Methods
@@ -202,7 +200,11 @@ actor ExtensionBuilder {
     ) throws -> Process {
         let task = Process()
         task.executableURL = shellUrl
+#if os(Windows)
+        task.arguments = ["/c"] + arguments
+#else
         task.arguments = ["-c"] + arguments
+#endif
         task.standardOutput = pipe
         task.standardError = pipe
         return task

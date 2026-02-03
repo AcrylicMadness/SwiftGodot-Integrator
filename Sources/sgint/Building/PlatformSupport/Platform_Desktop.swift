@@ -31,7 +31,7 @@ extension Platform_Desktop {
             "--configuration \(builder.buildMode)"
         ]
         if let debugInfoFormat {
-            commands.append(" --deb-debug-info-format \(debugInfoFormat)")
+            commands.append("-debug-info-format \(debugInfoFormat)")
         }
         let cmd = commands.joined(separator: " ")
         try await builder.run(cmd)

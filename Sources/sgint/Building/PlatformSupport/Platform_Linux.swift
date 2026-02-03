@@ -26,8 +26,7 @@ struct Platform_Linux: Platform_Desktop {
         // Get its directory
         let outputDir = await builder.binDestinationDirectory(
             for: self,
-            with: builder.buildArch,
-            appending: builder.buildMode.rawValue
+            with: builder.buildArch
         )
         let swiftGodotPath = outputDir
             .appendingPathComponent("\(swiftGodotLibName).\(mainLibExtension)")
