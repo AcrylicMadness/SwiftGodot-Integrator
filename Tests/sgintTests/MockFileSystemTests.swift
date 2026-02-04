@@ -29,6 +29,11 @@ struct MockFileSystemTests {
                                 name: "bar",
                                 isFile: false,
                                 children: []
+                            ),
+                            MockFileSystem.Node(
+                                name: "baz",
+                                isFile: false,
+                                children: []
                             )
                         ]
                     )
@@ -37,6 +42,26 @@ struct MockFileSystemTests {
         ]
         try fileSystem.createDirectory(
             at: URL(fileURLWithPath: "/foo/bar"),
+            withIntermediateDirectories: true
+        )
+        try fileSystem.createDirectory(
+            at: URL(fileURLWithPath: "/foo/baz"),
+            withIntermediateDirectories: true
+        )
+        #expect(fileSystem.contents == expectedStructure)
+    }
+    
+    @Test
+    func testCreateNonExistantDirectory() throws {
+        let expectedStructure = [
+            MockFileSystem.Node(name: fileSystem.currentDirectoryPath, isFile: false)
+        ]
+        try fileSystem.createDirectory(
+            at: URL(fileURLWithPath: "/"),
+            withIntermediateDirectories: true
+        )
+        try fileSystem.createDirectory(
+            at: URL(fileURLWithPath: ""),
             withIntermediateDirectories: true
         )
         #expect(fileSystem.contents == expectedStructure)

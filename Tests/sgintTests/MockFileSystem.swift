@@ -122,17 +122,23 @@ class MockFileSystem: FileOperations {
             return
         }
         components.removeFirst()
-        let newNode = Node(name: name, isFile: false)
-        
-        if let node {
-            node.children.append(newNode)
+        let nextNode: Node
+        if let existingNode = (node ?? baseNode).children.first(where: {
+            $0.name == name
+        }) {
+            nextNode = existingNode
         } else {
-            baseNode.children.append(newNode)
+            nextNode = Node(name: name, isFile: false)
+        }
+        if let node {
+            node.children.append(nextNode)
+        } else {
+            baseNode.children.append(nextNode)
         }
         // Create more folders if needed
         if !components.isEmpty {
             createDirectoryNode(
-                for: newNode,
+                for: nextNode,
                 pathComponents: components,
             )
         }
