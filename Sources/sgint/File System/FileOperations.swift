@@ -17,7 +17,8 @@ protocol FileOperations {
     ) throws
     
     func string(
-        contentsOf url: URL
+        contentsOf url: URL,
+        encoding: String.Encoding
     ) throws -> String
     
     func write(

@@ -10,20 +10,18 @@ import Testing
 @testable import sgint
 
 /// Basic file system tree emulation to avoid testing with real files
-class MockFileSystem: FileOperations {
-    
+class MockFileSystem {
     class Node: Identifiable, Equatable {
-        
         var name: String
         var isFile: Bool
         var children: [Node]
-        var contents: String?
+        var contents: Data?
         
         init(
             name: String,
-            isFile: Bool,
+            isFile: Bool = false,
             children: [Node] = [],
-            contents: String? = nil
+            contents: Data? = nil
         ) {
             self.name = name
             self.isFile = isFile
@@ -35,6 +33,10 @@ class MockFileSystem: FileOperations {
             name
         }
         
+        subscript(index: String) -> Node? {
+            children.first(where: { $0.name == index })
+        }
+        
         static func == (
             lhs: MockFileSystem.Node,
             rhs: MockFileSystem.Node
@@ -43,40 +45,136 @@ class MockFileSystem: FileOperations {
         }
     }
     
-    enum MockFileSystemError: Error {
+    enum Error: Swift.Error {
         case notImplemented
+        case pathNotFound
+        case notAFile
+        case notADirectory
+        case badString
     }
     
-    var contents: [Node]
-    
-    var currentDirectoryPath: String {
-        _cwd
-    }
-    
-    private var baseNode: Node
-    private let _cwd: String
+    private(set) var rootNode: Node
+    private let cwd: String
     
     init(cwd: String = "testing") {
-        self._cwd = cwd
-        let baseNode = Node(
+        self.cwd = cwd
+        let rootNode = Node(
             name: cwd,
             isFile: false
         )
-        self.baseNode = baseNode
-        self.contents = [
-            baseNode
-        ]
+        self.rootNode = rootNode
+    }
+    
+    private
+    func pathComponents(
+        from url: URL
+    ) -> [String] {
+        var components = url.pathComponents
+        if let first = components.first, first == "/" {
+            components.removeFirst()
+        }
+        return components
+    }
+    
+    private
+    func pathComponents(
+        from path: String
+    ) -> [String] {
+        path.split(separator: "/").map({ String($0) })
+    }
+ 
+    private
+    func createDirectoryNode(
+        for node: Node,
+        pathComponents: [String],
+        createIntermidiateDirectories: Bool
+    ) throws {
+        var components = pathComponents
+        guard let name = components.popFirst() else {
+            return
+        }
+        let nextNode: Node
+        if let existingNode = node[name] {
+            nextNode = existingNode
+        } else {
+            nextNode = Node(name: name, isFile: false)
+            if components.isEmpty || createIntermidiateDirectories {
+                node.children.append(nextNode)
+            } else {
+                throw Error.pathNotFound
+            }
+        }
+        if !components.isEmpty {
+            try createDirectoryNode(
+                for: nextNode,
+                pathComponents: components,
+                createIntermidiateDirectories: createIntermidiateDirectories
+            )
+        }
+    }
+    
+    private
+    func findEndNode(
+        for node: Node,
+        with pathComponents: [String]
+    ) throws -> Node {
+        var components = pathComponents
+        guard let name = components.popFirst() else {
+            return node
+        }
+        guard let next = node[name] else {
+            throw Error.pathNotFound
+        }
+        return try findEndNode(for: next, with: components)
+    }
+    
+    private
+    func children(
+        for node: Node,
+        with pathComponents: [String]
+    ) throws -> [Node] {
+        let endNode = try findEndNode(for: rootNode, with: pathComponents)
+        guard !endNode.isFile else {
+            throw Error.notADirectory
+        }
+        return endNode.children
+    }
+    
+    private
+    func contents(
+        for: Node,
+        with pathComponents: [String]
+    ) throws -> Data {
+        let endNode = try findEndNode(for: rootNode, with: pathComponents)
+        guard endNode.isFile else {
+            throw Error.notAFile
+        }
+        return endNode.contents ?? Data()
+    }
+}
+
+// MARK: - FileOperations
+extension MockFileSystem: FileOperations {
+    var currentDirectoryPath: String {
+        cwd
     }
     
     func copyItem(
         at sourceUrl: URL,
         to destinationUrl: URL
     ) throws {
-        throw MockFileSystemError.notImplemented
+        throw Error.notImplemented
     }
     
-    func string(contentsOf url: URL) throws -> String {
-        throw MockFileSystemError.notImplemented
+    func string(
+        contentsOf url: URL,
+        encoding: String.Encoding = .utf8
+    ) throws -> String {
+        let contents = try contents(for: rootNode, with: pathComponents(from: url))
+        guard let string = String(data: contents, encoding: encoding) else {
+            throw Error.badString
+        }
+        return string
     }
     
     func write(
@@ -85,18 +183,49 @@ class MockFileSystem: FileOperations {
         atomically: Bool,
         encoding: String.Encoding
     ) throws {
-        throw MockFileSystemError.notImplemented    }
+        var path = pathComponents(from: outputURL)
+        guard let fileName = path.popLast() else {
+            throw Error.pathNotFound
+        }
+        let endNode = try findEndNode(
+            for: rootNode,
+            with: path
+        )
+        let data = string.data(using: encoding)
+        var workingNode: Node
+        if let existing = endNode[fileName] {
+            guard endNode.isFile else {
+                throw Error.notAFile
+            }
+            workingNode = existing
+        } else {
+            workingNode = Node(name: fileName, isFile: true)
+            endNode.children.append(workingNode)
+        }
+        workingNode.contents = data
+    }
     
     func fileExists(atPath path: String) -> Bool {
-        return false
+        do {
+            let endNode = try findEndNode(
+                for: rootNode,
+                with: pathComponents(from: path)
+            )
+            return endNode.isFile
+        } catch {
+            return false
+        }
     }
     
     func removeItem(atPath path: String) throws {
-        throw MockFileSystemError.notImplemented
+        throw Error.notImplemented
     }
     
     func contentsOfDirectory(atPath path: String) throws -> [String] {
-        throw MockFileSystemError.notImplemented
+        try children(
+            for: rootNode,
+            with: pathComponents(from: path)
+        ).map({ $0.name })
     }
     
     func createDirectory(
@@ -104,43 +233,10 @@ class MockFileSystem: FileOperations {
         withIntermediateDirectories createIntermediates: Bool,
         attributes: [FileAttributeKey : Any]? = nil
     ) throws {
-        // Assume `withIntermediateDirectories` is always `true`
-        var pathComponents = url.pathComponents
-        if let first = pathComponents.first, first == "/" {
-            pathComponents.removeFirst()
-        }
-        createDirectoryNode(for: nil, pathComponents: pathComponents)
-    }
-    
-    private
-    func createDirectoryNode(
-        for node: Node?,
-        pathComponents: [String]
-    ) {
-        var components = pathComponents
-        guard let name = components.first else {
-            return
-        }
-        components.removeFirst()
-        let nextNode: Node
-        if let existingNode = (node ?? baseNode).children.first(where: {
-            $0.name == name
-        }) {
-            nextNode = existingNode
-        } else {
-            nextNode = Node(name: name, isFile: false)
-        }
-        if let node {
-            node.children.append(nextNode)
-        } else {
-            baseNode.children.append(nextNode)
-        }
-        // Create more folders if needed
-        if !components.isEmpty {
-            createDirectoryNode(
-                for: nextNode,
-                pathComponents: components,
-            )
-        }
+        try createDirectoryNode(
+            for: rootNode,
+            pathComponents: pathComponents(from: url),
+            createIntermidiateDirectories: createIntermediates
+        )
     }
 }

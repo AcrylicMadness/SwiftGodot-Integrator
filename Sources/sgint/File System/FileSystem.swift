@@ -29,7 +29,10 @@ class FileSystem: FileOperations {
         )
     }
     
-    func string(contentsOf url: URL) throws -> String {
+    func string(
+        contentsOf url: URL,
+        encoding: String.Encoding = .utf8
+    ) throws -> String {
         try String(contentsOf: url)
     }
     
