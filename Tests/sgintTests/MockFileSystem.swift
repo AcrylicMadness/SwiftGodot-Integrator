@@ -34,14 +34,27 @@ class MockFileSystem {
         }
         
         subscript(index: String) -> Node? {
-            children.first(where: { $0.name == index })
+            get {
+                children.first(where: { $0.name == index })
+            }
+            set {
+                guard let newValue else {
+                    children.removeAll(where: { $0.name == index })
+                    return
+                }
+                if let index = children.firstIndex(where: { $0.name == index }) {
+                    children[index] = newValue
+                } else {
+                    children.append(newValue)
+                }
+            }
         }
         
         static func == (
             lhs: MockFileSystem.Node,
             rhs: MockFileSystem.Node
         ) -> Bool {
-            lhs.id == rhs.id
+            lhs.id == rhs.id && lhs.isFile == rhs.isFile
         }
     }
     
@@ -51,6 +64,7 @@ class MockFileSystem {
         case notAFile
         case notADirectory
         case badString
+        case alreadyExists
     }
     
     private(set) var rootNode: Node
@@ -99,7 +113,7 @@ class MockFileSystem {
         } else {
             nextNode = Node(name: name, isFile: false)
             if components.isEmpty || createIntermidiateDirectories {
-                node.children.append(nextNode)
+                node[name] = nextNode
             } else {
                 throw Error.pathNotFound
             }
@@ -113,7 +127,7 @@ class MockFileSystem {
         }
     }
     
-    private
+    @discardableResult private
     func findEndNode(
         for node: Node,
         with pathComponents: [String]
@@ -151,6 +165,45 @@ class MockFileSystem {
         }
         return endNode.contents ?? Data()
     }
+    
+    private
+    func write(
+        data: Data?,
+        to pathComponents: [String],
+    ) throws {
+        var path = pathComponents
+        guard let fileName = path.popLast() else {
+            throw Error.pathNotFound
+        }
+        let endNode = try findEndNode(
+            for: rootNode,
+            with: path
+        )
+        var workingNode: Node
+        if let existing = endNode[fileName] {
+            guard endNode.isFile else {
+                throw Error.notAFile
+            }
+            workingNode = existing
+        } else {
+            workingNode = Node(name: fileName, isFile: true)
+            endNode[fileName] = workingNode
+        }
+        workingNode.contents = data
+    }
+    
+    private
+    func delete(
+        at pathComponents: [String],
+        from node: Node
+    ) throws {
+        var path = pathComponents
+        guard let nodeToDelete = path.popLast() else {
+            throw Error.pathNotFound
+        }
+        let endNode = try findEndNode(for: node, with: path)
+        endNode[nodeToDelete] = nil
+    }
 }
 
 // MARK: - FileOperations
@@ -163,7 +216,28 @@ extension MockFileSystem: FileOperations {
         at sourceUrl: URL,
         to destinationUrl: URL
     ) throws {
-        throw Error.notImplemented
+        let sourceNode = try findEndNode(
+            for: rootNode,
+            with: pathComponents(from: sourceUrl)
+        )
+        var destinationPath = pathComponents(from: destinationUrl)
+        guard let destinationName = destinationPath.popLast() else {
+            throw MockFileSystem.Error.pathNotFound
+        }
+        let copiedNode = Node(
+            name: destinationName,
+            isFile: sourceNode.isFile,
+            children: sourceNode.children,
+            contents: sourceNode.contents
+        )
+        let destinationNode = try findEndNode(
+            for: rootNode,
+            with: destinationPath
+        )
+        guard destinationNode[destinationName] == nil else {
+            throw MockFileSystem.Error.alreadyExists
+        }
+        destinationNode[destinationName] = copiedNode
     }
     
     func string(
@@ -183,42 +257,24 @@ extension MockFileSystem: FileOperations {
         atomically: Bool,
         encoding: String.Encoding
     ) throws {
-        var path = pathComponents(from: outputURL)
-        guard let fileName = path.popLast() else {
-            throw Error.pathNotFound
-        }
-        let endNode = try findEndNode(
-            for: rootNode,
-            with: path
-        )
         let data = string.data(using: encoding)
-        var workingNode: Node
-        if let existing = endNode[fileName] {
-            guard endNode.isFile else {
-                throw Error.notAFile
-            }
-            workingNode = existing
-        } else {
-            workingNode = Node(name: fileName, isFile: true)
-            endNode.children.append(workingNode)
-        }
-        workingNode.contents = data
+        try write(data: data, to: pathComponents(from: outputURL))
     }
     
     func fileExists(atPath path: String) -> Bool {
         do {
-            let endNode = try findEndNode(
+            try findEndNode(
                 for: rootNode,
                 with: pathComponents(from: path)
             )
-            return endNode.isFile
+            return true
         } catch {
             return false
         }
     }
     
     func removeItem(atPath path: String) throws {
-        throw Error.notImplemented
+        try delete(at: pathComponents(from: path), from: rootNode)
     }
     
     func contentsOfDirectory(atPath path: String) throws -> [String] {

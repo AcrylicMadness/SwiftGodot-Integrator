@@ -9,15 +9,6 @@ import Foundation
 import Testing
 @testable import sgint
 
-extension Error {
-    func isEqualTo(_ other: MockFileSystem.Error) -> Bool {
-        guard let fsError = self as? MockFileSystem.Error else {
-            return false
-        }
-        return fsError == other
-    }
-}
-
 @Suite
 struct MockFileSystemTests {
     
@@ -56,13 +47,11 @@ struct MockFileSystemTests {
     
     @Test
     func testCreateWithoutIntermidiates() throws {
-        do {
+        #expect(throws: MockFileSystem.Error.pathNotFound) {
             try fileSystem.createDirectory(
                 at: URL(fileURLWithPath: "foo/bar/baz"),
                 withIntermediateDirectories: false
             )
-        } catch {
-            #expect(error.isEqualTo(.pathNotFound))
         }
     }
     
@@ -97,11 +86,8 @@ struct MockFileSystemTests {
         let fooContents = try fileSystem.contentsOfDirectory(atPath: "/foo")
         #expect(fooContents == ["bar", "baz"])
         
-        do {
-            let contents = try fileSystem.contentsOfDirectory(atPath: "/non/existent/path")
-            #expect(Bool(false), "Expected to throw, but got dir contents: \(contents)")
-        } catch {
-            #expect(error.isEqualTo(.pathNotFound))
+        #expect(throws: MockFileSystem.Error.pathNotFound) {
+            let _ = try fileSystem.contentsOfDirectory(atPath: "/non/existent/path")
         }
         
         let fileUrl = URL(fileURLWithPath: "/foo/bar/file")
@@ -113,11 +99,8 @@ struct MockFileSystemTests {
             encoding: .utf8
         )
         
-        do {
-            let contents = try fileSystem.contentsOfDirectory(atPath: fileUrl.path)
-            #expect(Bool(false), "Expected to throw, but got dir contents: \(contents)")
-        } catch {
-            #expect(error.isEqualTo(.notADirectory))
+        #expect(throws: MockFileSystem.Error.notADirectory) {
+            let _ = try fileSystem.contentsOfDirectory(atPath: fileUrl.path)
         }
     }
     
@@ -140,6 +123,24 @@ struct MockFileSystemTests {
             encoding: .utf8
         )
         
+        // Test writing files at incorrect paths
+        #expect(throws: MockFileSystem.Error.pathNotFound) {
+            try fileSystem.write(
+                string: "Fail",
+                to: URL(fileURLWithPath: ""),
+                atomically: true,
+                encoding: .utf8
+            )
+        }
+        #expect(throws: MockFileSystem.Error.notAFile) {
+            try fileSystem.write(
+                string: "Fail",
+                to: testDirUrl,
+                atomically: true,
+                encoding: .utf8
+            )
+        }
+        
         // Test file existance check
         #expect(fileSystem.fileExists(atPath: testFileUrl.path))
         
@@ -153,18 +154,100 @@ struct MockFileSystemTests {
         let contents = try fileSystem.string(contentsOf: testFileUrl)
         #expect(contents == testContents)
         
-        do {
-            let content = try fileSystem.string(contentsOf: testDirUrl)
-            #expect(Bool(false), "Expected to throw, but got content: \(content)")
-        } catch {
-            #expect(error.isEqualTo(.notAFile))
+        #expect(throws: MockFileSystem.Error.notAFile) {
+            let _ = try fileSystem.string(contentsOf: testDirUrl)
         }
         
-        do {
-            let content = try fileSystem.string(contentsOf: nonExistantFileUrl)
-            #expect(Bool(false), "Expected to throw, but got content: \(content)")
-        } catch {
-            #expect(error.isEqualTo(.pathNotFound))
+        #expect(throws: MockFileSystem.Error.pathNotFound) {
+            let _ = try fileSystem.string(contentsOf: nonExistantFileUrl)
+        }
+    }
+    
+    @Test
+    func testRemove() throws {
+        let testFileName = "hello.txt"
+        let testDirUrl = URL(fileURLWithPath: "/foo/bar")
+        let testFileUrl = testDirUrl.appendingPathComponent(testFileName)
+        
+        try fileSystem.createDirectory(
+            at: testDirUrl,
+            withIntermediateDirectories: true
+        )
+        // Test removing file directly
+        try fileSystem.write(
+            string: "Hello",
+            to: testFileUrl,
+            atomically: true,
+            encoding: .utf8
+        )
+        
+        try fileSystem.removeItem(atPath: testFileUrl.path)
+        #expect(!fileSystem.fileExists(atPath: testFileUrl.path))
+        
+        // Test removing file's parent directory
+        try fileSystem.write(
+            string: "Hello",
+            to: testFileUrl,
+            atomically: true,
+            encoding: .utf8
+        )
+        
+        try fileSystem.removeItem(atPath: testDirUrl.path)
+        #expect(!fileSystem.fileExists(atPath: testFileUrl.path))
+        #expect(!fileSystem.fileExists(atPath: testDirUrl.path))
+        
+        #expect(throws: MockFileSystem.Error.pathNotFound) {
+            try fileSystem.removeItem(
+                atPath: testDirUrl
+                    .appendingPathComponent("fakefile.dir")
+                    .path
+            )
+        }
+    }
+    
+    @Test
+    func testCopy() throws {
+        let fileContent: String = "Some Content"
+        let sourceFileName: String = "hello.txt"
+        let sourceDirUrl = URL(fileURLWithPath: "/foo/bar")
+        let sourceFileUrl = sourceDirUrl.appendingPathComponent(sourceFileName)
+        
+        let destinationFileName: String = "copy.txt"
+        let destinationDirUrl = URL(fileURLWithPath: "/another/dir")
+        let destinationFileUrl = sourceDirUrl.appendingPathComponent(destinationFileName)
+        
+        // Write test file
+        try fileSystem.createDirectory(
+            at: sourceDirUrl,
+            withIntermediateDirectories: true
+        )
+        try fileSystem.write(
+            string: fileContent,
+            to: sourceFileUrl,
+            atomically: true,
+            encoding: .utf8
+        )
+        
+        // Copy to non-existant directory
+        #expect(throws: MockFileSystem.Error.pathNotFound) {
+            try fileSystem.copyItem(at: sourceFileUrl, to: destinationDirUrl)
+        }
+        
+        // Create destination directory and copy
+        try fileSystem.createDirectory(
+            at: destinationDirUrl,
+            withIntermediateDirectories: true
+        )
+        try fileSystem.copyItem(at: sourceFileUrl, to: destinationFileUrl)
+        #expect(try fileSystem.string(contentsOf: destinationFileUrl) == fileContent)
+        
+        // Try copying again
+        #expect(throws: MockFileSystem.Error.alreadyExists) {
+            try fileSystem.copyItem(at: sourceFileUrl, to: destinationFileUrl)
+        }
+        // Try copying to wrong url
+        #expect(throws: MockFileSystem.Error.pathNotFound) {
+            try fileSystem.copyItem(at: sourceFileUrl, to: URL(fileURLWithPath: ""))
         }
     }
 }
