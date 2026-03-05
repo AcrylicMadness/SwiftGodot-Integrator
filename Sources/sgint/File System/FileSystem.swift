@@ -37,7 +37,7 @@ final class FileSystem: FileOperations {
         contentsOf url: URL,
         encoding: String.Encoding = .utf8
     ) throws -> String {
-        try String(contentsOf: url)
+        try String(contentsOf: url, encoding: encoding)
     }
     
     func write(

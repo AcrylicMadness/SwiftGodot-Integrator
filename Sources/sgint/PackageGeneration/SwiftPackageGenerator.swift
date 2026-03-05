@@ -41,7 +41,8 @@ actor SwiftPackageGenerator {
             iosVersion: ".v17",
             swiftPackageUrl: builder.driverPath.appendingPathComponent("Package.swift"),
             supressWarnings: supressWarnings,
-            useEntryPointGenerator: useEntryPointGenerator
+            useEntryPointGenerator: useEntryPointGenerator,
+            fileSystem: builder.fileSystem
         )
         
         try patcher.patch()
