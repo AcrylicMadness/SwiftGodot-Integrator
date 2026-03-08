@@ -181,7 +181,7 @@ final class MockFileSystem: @unchecked Sendable {
         )
         var workingNode: Node
         if let existing = endNode[fileName] {
-            guard endNode.isFile else {
+            guard existing.isFile else {
                 throw Error.notAFile
             }
             workingNode = existing

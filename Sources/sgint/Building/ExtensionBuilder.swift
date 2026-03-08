@@ -105,14 +105,16 @@ actor ExtensionBuilder {
         let outputPipe = Pipe()
         let task = try self.createProcess([command], outputPipe)
         
-        outputPipe.fileHandleForReading.readabilityHandler = { [weak self] fileHandle in
-            if let line = self?.getOutput(outputPipe, fileHandle) {
-                // Far from the best way to do it, but AsyncBytes is not available on Linux
-                Task { @MainActor in
-                    await self?.output.printLine(line)
+        outputPipe
+            .fileHandleForReading
+            .readabilityHandler = { [weak self] fileHandle in
+                if let line = self?.getOutput(outputPipe, fileHandle) {
+                    // Far from the best way to do it, but AsyncBytes is not available on Linux
+                    Task { @MainActor in
+                        await self?.output.printLine(line)
+                    }
                 }
             }
-        }
         try task.run()
         task.waitUntilExit()
         

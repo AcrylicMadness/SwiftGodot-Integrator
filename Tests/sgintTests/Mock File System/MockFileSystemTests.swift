@@ -110,6 +110,7 @@ struct MockFileSystemTests {
         let testFileName = "hello.txt"
         let testDirUrl = URL(fileURLWithPath: "/foo/bar")
         let testFileUrl = testDirUrl.appendingPathComponent(testFileName)
+        let overwriteContents: String = "Goodbye, World!"
         
         // Create and write test file
         try fileSystem.createDirectory(
@@ -161,6 +162,19 @@ struct MockFileSystemTests {
         #expect(throws: MockFileSystem.Error.pathNotFound) {
             let _ = try fileSystem.string(contentsOf: nonExistantFileUrl)
         }
+        
+        // Test overwrite
+        try fileSystem.write(
+            string: overwriteContents,
+            to: testFileUrl,
+            atomically: true,
+            encoding: .utf8
+        )
+        
+        #expect(fileSystem.fileExists(atPath: testFileUrl.path))
+        
+        let overwriteContentsFromFileSystem = try fileSystem.string(contentsOf: testFileUrl)
+        #expect(overwriteContentsFromFileSystem == overwriteContents)
     }
     
     @Test
