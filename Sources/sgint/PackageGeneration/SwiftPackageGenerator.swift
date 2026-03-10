@@ -22,9 +22,10 @@ actor SwiftPackageGenerator {
         // swift package add-product --type dynamic-library --name (name)
         // But this approach will not auto-generate complete
         // file structure (that includes test).
-        try await builder.fileManager.createDirectory(
-            at: builder.driverPath, 
-            withIntermediateDirectories: true
+        try await builder.fileSystem.createDirectory(
+            at: builder.driverPath,
+            withIntermediateDirectories: true,
+            attributes: nil
         )
         let setup = [
             "cd \(builder.driverName) && swift package init --name \(builder.driverName) --type library",
@@ -40,7 +41,8 @@ actor SwiftPackageGenerator {
             iosVersion: ".v17",
             swiftPackageUrl: builder.driverPath.appendingPathComponent("Package.swift"),
             supressWarnings: supressWarnings,
-            useEntryPointGenerator: useEntryPointGenerator
+            useEntryPointGenerator: useEntryPointGenerator,
+            fileSystem: builder.fileSystem
         )
         
         try patcher.patch()
