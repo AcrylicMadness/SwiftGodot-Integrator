@@ -114,6 +114,7 @@ struct GDExtension {
     ) -> (String, String, String) {
         var target = "\(platform.name).\(mode.rawValue)"
         if let arch {
+            // Always use alias for .gdextension file
             target += ".\(arch.alias)"
         }
         let (driverLib, swiftGodotLib) = platform.getMainLibNames(for: name)

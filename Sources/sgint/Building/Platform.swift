@@ -33,6 +33,13 @@ protocol Platform: Hashable, Sendable {
     /// Determines if architectures should be separated in .gdextension file for this platform
     var separateArchs: Bool { get }
     
+    /// Determines if raw name or alias should be used when calling build commands and generating directories
+    ///
+    /// Despite technically being the same architecture, Linux requires explicit usage of 'aarch64' instead on 'arm64'.
+    /// While this works on macOS too, SourceKit-LSP tends to get confused, if the build artifacts
+    /// are not located in 'arm64-apple-macosx' folder.
+    var useArchAlias: Bool { get }
+    
     /// Returns correct directory name for provided architecture
     /// - Parameter arch: Architectire (if applicable)
     /// - Returns: Directory Name
@@ -73,12 +80,13 @@ extension Platform {
     var id: String { name }
     var swiftGodotLibName: String { libPrefix + "SwiftGodot" }
     var additionalLibExtensions: [String] { [] }
+    var useArchAlias: Bool { false }
     
     func directory(for arch: Architecture?) -> String {
         guard let arch, separateArchs else {
             return name
         }
-        return "\(id)-\(arch.rawValue)"
+        return "\(id)-\(useArchAlias ? arch.alias : arch.rawValue)"
     }
     
     func getMainLibNames(

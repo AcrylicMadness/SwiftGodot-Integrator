@@ -22,7 +22,8 @@ extension Platform_Desktop {
     func buildSwift(
         using builder: ExtensionBuilder
     ) async throws -> String {
-        let archConfig = "--arch \(await builder.buildArch)"
+        let archName = await (useArchAlias ? builder.buildArch.alias : builder.buildArch.rawValue)
+        let archConfig = "--arch \(archName)"
         
         var commands = await [
             "cd \(builder.driverPath.path)",

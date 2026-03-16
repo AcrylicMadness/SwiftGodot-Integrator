@@ -11,6 +11,7 @@ struct Platform_macOS: Platform_Desktop {
     var name: String { "macos" }
     var mainLibExtension: String { "dylib" }
     var libPrefix: String { "lib" }
+    var useArchAlias: Bool { true }
     
     func build(
         using builder: ExtensionBuilder
