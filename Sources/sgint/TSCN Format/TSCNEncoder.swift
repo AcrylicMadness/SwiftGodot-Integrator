@@ -63,7 +63,7 @@ final class TSCNEncoder {
         return string.replacingOccurrences(of: "\\", with: "")
     }
     
-    enum EncodingError: Error {
+    enum EncodingError: Error, Equatable {
         case stringConversionFailed(usingEncoding: String.Encoding)
     }
 }
